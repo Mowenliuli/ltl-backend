@@ -1,0 +1,10 @@
+fastapi>=0.110
+uvicorn[standard]>=0.29
+SQLAlchemy>=2.0
+PyMySQL>=1.1
+psycopg2-binary>=2.9
+pydantic-settings>=2.2
+python-jose[cryptography]>=3.3
+passlib[bcrypt]>=1.7
+bcrypt==3.2.2  # passlib 兼容性：4.x 的 detect_wrap_bug 会误报
+python-multipart>=0.0.9
