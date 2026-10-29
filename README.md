@@ -72,17 +72,38 @@ uvicorn main:app --reload --port 8000
 
 ## 部署到 Render
 
-### 1. 创建 PostgreSQL 数据库
+### 1. 查看/创建 PostgreSQL 数据库
 
-1. https://render.com → **New +** → **PostgreSQL**
+#### 1.1 先确认是否已有数据库
+
+打开 https://dashboard.render.com，登录后看左侧导航栏 **PostgreSQL**：
+
+- 如果列表是空的 → 你还没创建，跳到 1.2
+- 如果已有记录（如 `ltl-chat-db`）→ 直接点进去看详情，跳到 1.3
+
+#### 1.2 创建 PostgreSQL 数据库
+
+1. Render 控制台 → **New +** → **PostgreSQL**
 2. 填写：
-   - **Name**：`ltl-chat-db`
+   - **Name**：`ltl-chat-db`（随便起，好记就行）
    - **Database**：`ltl_chat`
-   - **User**：`ltl`
-   - **Region**：`Singapore`（离国内最近）
+   - **User**：`ltl`（默认会生成，也可以改）
+   - **Region**：`Singapore`（离国内最近，和 Web Service 选同一个）
+   - **PostgreSQL Version**：默认最新即可
    - **Plan**：**Free**
 3. 点 **Create Database**
-4. 创建完成后进入详情页，找到 **Connections** 区块，复制 **Internal Database URL**（形如 `postgresql://ltl:<密码>@<内部主机>/ltl_chat`）
+4. 等 1-2 分钟创建完成
+
+#### 1.3 拿到连接配置
+
+数据库创建完成后：
+
+1. 进入数据库详情页（点数据库名字）
+2. 往下滑找到 **Connections** 区块
+3. 复制 **Internal Database URL**（形如 `postgresql://ltl:xxxxx@dpg-xxxxx-a/ltl_chat`）
+
+> **记下 Internal Database URL**，待会儿 Web Service 要用。
+> 不要复制 External Database URL（那个是给本地调试用的，每次查询走公网会慢且有流量费）。
 
 ### 2. 创建 Web Service
 
@@ -119,18 +140,20 @@ uvicorn main:app --reload --port 8000
 
 填完后点 **Create Web Service**，Render 会自动开始构建部署。
 
-### 4. 初始化数据库表
+### 4. 初始化数据库表（自动）
 
-部署完成后：
+**免费版 Render 没有 Shell 访问权限**，所以代码里加了启动钩子：
 
-1. 进入 Web Service 详情页 → 左侧 **Shell** 标签
-2. 在 Shell 里执行：
+```python
+# main.py
+@app.on_event("startup")
+def init_db():
+    Base.metadata.create_all(engine)
+```
 
-   ```bash
-   python init_db.py
-   ```
+每次服务启动时会自动检查并创建缺失的表，无需手动执行 `init_db.py`。
 
-3. 看到 `数据库表已创建` 即成功
+> 如果你用的是付费版 Render（有 Shell），也可以手动执行 `python init_db.py` 确认。
 
 ### 5. 验证部署
 

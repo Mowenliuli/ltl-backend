@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from auth import get_user_from_ws, router as auth_router
 from config import settings
-from database import SessionLocal
+from database import SessionLocal, engine, Base
 from routes import chat, files, groups, users
 from ws import websocket_loop
 
@@ -32,6 +32,16 @@ app.include_router(files.router)
 
 # 上传目录仅确保存在；下载走 /api/files/download 鉴权接口，不再匿名静态挂载
 Path(settings.UPLOAD_DIR).mkdir(parents=True, exist_ok=True)
+
+
+@app.on_event("startup")
+def init_db():
+    """启动时自动建表（免费版 Render 无 Shell，用启动钩子代替）。"""
+    try:
+        Base.metadata.create_all(engine)
+        logging.info("数据库表已就绪")
+    except Exception as e:
+        logging.error(f"数据库表创建失败: {e}")
 
 
 @app.websocket("/ws")
